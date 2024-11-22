@@ -1,0 +1,67 @@
+body {
+    min-height: 100vh;
+    min-width: 100vw;
+    background-color: #12181f;
+    color: white;
+  }
+  
+  h1 {
+      text-align: center;
+      font-weight: 700;
+      font-size: 50px;
+  }
+  
+  p {
+      text-align: center;
+      font-size: 30px;
+      font-weight: bold;
+  }
+
+  .actions {
+    display: flex;
+    justify-content: center;
+}
+
+.actions button {
+    padding: 8px 16px;
+    font-size: 30px;
+    border-radius: 10px;
+    background-color: #27ae60;
+    color: white;
+}
+
+.grid-container{
+    text-align: center;
+    margin: auto;
+    width: 80%;
+    padding: 30px;
+}
+
+.card{
+    height: 30%;
+    width: 10%;
+    background-color: greenyellow;
+    color: #000;
+}
+
+#timer {
+    vertical-align: middle;
+    display: inline-block;
+    background: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    margin-right: 10%;
+}
+
+#topline {
+    display: flex;
+    flex-direction: row;
+    resize: vertical;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+#gamemode{
+    width: 10%;
+}
