@@ -1,0 +1,45 @@
+{
+  "creatorId": "OnTKCUKFc8fo9x78AAAF",
+  "players": {
+    "OnTKCUKFc8fo9x78AAAF": {
+      "username": "Sky",
+      "hasVoted": true
+    },
+    "TSNFsPH4HOe2bAs1AAAJ": {
+      "username": "Moi",
+      "hasVoted": true
+    }
+  },
+  "maxPlayers": 3,
+  "gameMode": "strict",
+  "backlog": [
+    {
+      "id": 1,
+      "description": "Implémenter la page d'accueil."
+    },
+    {
+      "id": 2,
+      "description": "Ajouter la fonctionnalité de recherche."
+    },
+    {
+      "id": 3,
+      "description": "Créer le système d'authentification."
+    }
+  ],
+  "currentFeatureIndex": 0,
+  "votes": {
+    "OnTKCUKFc8fo9x78AAAF": {
+      "username": "Sky",
+      "vote": "café"
+    },
+    "TSNFsPH4HOe2bAs1AAAJ": {
+      "username": "Moi",
+      "vote": "café"
+    }
+  },
+  "state": "voting",
+  "firstRound": true,
+  "discussionTimer": null,
+  "discussionEndTime": 1732537723969,
+  "extremes": []
+}

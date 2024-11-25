@@ -1,0 +1,84 @@
+/* public/styles.css */
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+#menu {
+    margin-top: 20px;
+}
+
+#game {
+    margin-top: 20px;
+}
+
+#cards {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.cardBtn {
+    width: 80px;
+    height: 120px;
+    margin: 5px;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+#playersList {
+    list-style-type: none;
+    padding: 0;
+}
+
+#availableRoomsList {
+    list-style-type: none;
+    padding: 0;
+}
+
+#availableRoomsList li {
+    margin: 5px 0;
+}
+
+#availableRoomsList button {
+    margin-left: 10px;
+}
+
+#chatDiv {
+    margin-top: 20px;
+    text-align: left;
+    width: 50%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#chatMessages {
+    border: 1px solid #ccc;
+    height: 200px;
+    overflow-y: scroll;
+    padding: 10px;
+}
+
+#chatMessages p {
+    margin: 5px 0;
+}
+
+#chatInput {
+    width: 80%;
+    padding: 5px;
+}
+
+#sendChatBtn {
+    padding: 5px 10px;
+}
+
+#discussionTimer {
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+#forceEndDiscussionBtn {
+    margin-top: 10px;
+    padding: 10px 20px;
+    display: none;
+}
