@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Planning Poker</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <div id="menu">
+        <h1>Planning Poker</h1>
+        <div id="createRoomDiv">
+            <h2>Créer une salle</h2>
+            <input type="text" id="roomNameInput" placeholder="Nom de la salle">
+            <input type="number" id="maxPlayersInput" placeholder="Nombre de joueurs">
+            <input type="text" id="usernameInput" placeholder="Votre pseudo">
+            <select id="gameModeSelect">
+                <option value="strict">Strict (Unanimité)</option>
+            </select>
+            <input type="file" id="backlogInput">
+            <button id="createRoomBtn">Créer la salle</button>
+        </div>
+        <div id="availableRoomsDiv">
+            <h2>Salles disponibles</h2>
+            <ul id="availableRoomsList"></ul>
+        </div>
+        <div id="loadGameDiv">
+            <h2>Reprendre une partie</h2>
+            <input type="text" id="loadRoomNameInput" placeholder="Nom de la salle">
+            <button id="loadGameBtn">Charger la partie</button>
+        </div>
+    </div>
+
+    <div id="game" style="display: none;">
+        <h2>Salle : <span id="roomNameDisplay"></span></h2>
+        <h3>Joueurs :</h3>
+        <ul id="playersList"></ul>
+        <div id="featureDiv">
+            <h3>Fonctionnalité :</h3>
+            <p id="featureDescription"></p>
+        </div>
+        <div id="voteDiv">
+            <h3>Votez :</h3>
+            <div id="cards">
+                <button class="cardBtn" data-value="1">1</button>
+                <button class="cardBtn" data-value="2">2</button>
+                <button class="cardBtn" data-value="3">3</button>
+                <button class="cardBtn" data-value="5">5</button>
+                <button class="cardBtn" data-value="8">8</button>
+                <button class="cardBtn" data-value="13">13</button>
+                <button class="cardBtn" data-value="20">20</button>
+                <button class="cardBtn" data-value="40">40</button>
+                <button class="cardBtn" data-value="100">100</button>
+                <button class="cardBtn" data-value="?">?</button>
+                <button class="cardBtn" data-value="café">☕ Café</button>
+            </div>
+        </div>
+        <div id="chatDiv" style="display: none;">
+            <h3>Discussion :</h3>
+            <div id="chatMessages"></div>
+            <input type="text" id="chatInput" placeholder="Écrivez votre message...">
+            <button id="sendChatBtn">Envoyer</button>
+        </div>
+        <div id="resultsDiv" style="display: none;">
+            <h3>Résultats :</h3>
+            <p id="results"></p>
+        </div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
