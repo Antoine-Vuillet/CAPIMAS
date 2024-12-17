@@ -55,93 +55,22 @@ createRoomBtn.addEventListener('click', () => {
 });
 
 // Réception de la confirmation de création de salle
-socket.on('roomCreated', (room) => {
-    document.getElementById('menu').style.display = 'none';
-    document.getElementById('game').style.display = 'block';
-    roomNameDisplay.textContent = roomName;
-});
+socket.on('roomCreated', roomCreation);
 
 // Réception de la liste des salles disponibles
-socket.on('availableRooms', (rooms) => {
-    availableRoomsList.innerHTML = '';
-
-    // Pour chaque salle disponible, créer un élément de liste avec un bouton "Rejoindre"
-    rooms.forEach(roomInfo => {
-        const { roomName: roomNameFromList, currentPlayers, maxPlayers } = roomInfo;
-        const li = document.createElement('li');
-        li.textContent = `${roomNameFromList} (${currentPlayers}/${maxPlayers} joueurs) `;
-
-        if (currentPlayers < maxPlayers) {
-            const joinButton = document.createElement('button');
-            joinButton.textContent = 'Rejoindre';
-            joinButton.addEventListener('click', () => {
-                Swal.fire({
-                    title: 'Entrez votre pseudo :',
-                    input: 'text',
-                    inputPlaceholder: 'Votre pseudo',
-                    showCancelButton: true,
-                    confirmButtonText: 'Rejoindre',
-                    cancelButtonText: 'Annuler'
-                }).then((result) => {
-                    if (result.isConfirmed && result.value) {
-                        username = result.value;
-                        roomName = roomNameFromList; 
-                        console.log('Tentative de rejoindre la salle :', roomName, 'avec le pseudo :', username);
-                        socket.emit('joinRoom', { roomName, username });
-                    }
-                });
-            });
-            li.appendChild(joinButton);
-        } else {
-            const fullLabel = document.createElement('span');
-            fullLabel.textContent = ' (Salle pleine)';
-            li.appendChild(fullLabel);
-        }
-
-        availableRoomsList.appendChild(li);
-    });
-});
+socket.on('availableRooms', roomsAvailable);
 
 // Confirmation de la jonction de la salle
-socket.on('roomJoined', () => {
-    console.log('Vous avez rejoint la salle :', roomName);
-    document.getElementById('menu').style.display = 'none';
-    document.getElementById('game').style.display = 'block';
-    roomNameDisplay.textContent = roomName;
-});
+socket.on('roomJoined', roomJoined);
 
 // Mise à jour de la liste des joueurs dans la salle
-socket.on('updatePlayers', (players) => {
-    playersList.innerHTML = '';
-    players.forEach(player => {
-        const li = document.createElement('li');
-        li.textContent = player;
-        playersList.appendChild(li);
-    });
-});
+socket.on('updatePlayers', updatePlayers);
 
 // Démarrage du vote
-socket.on('startVoting', (feature) => {
-    console.log('Démarrage du vote pour la fonctionnalité :', feature.description);
-    document.getElementById('menu').style.display = 'none';
-    document.getElementById('game').style.display = 'block';
-    roomNameDisplay.textContent = roomName;
-    featureDescription.textContent = feature.description;
-    // Réactiver les boutons de vote pour le nouveau tour
-    cards.forEach(btn => btn.disabled = false);
-    // Cacher le chat pendant le vote
-    chatDiv.style.display = 'none';
-    chatMessages.innerHTML = '';
-    // Cacher le timer et le bouton de fin de discussion
-    discussionTimerDisplay.style.display = 'none';
-    forceEndDiscussionBtn.style.display = 'none';
-});
+socket.on('startVoting', startVote);
 
 // Réception de la difficulté estimée
-socket.on('featureEstimated', (data) => {
-    const { feature, estimatedDifficulty } = data;
-    Swal.fire('Difficulté estimée', `La fonctionnalité "${feature.description}" a été estimée à ${estimatedDifficulty}.`, 'success');
-});
+socket.on('featureEstimated', featureEstimated);
 
 // Gestion du vote
 cards.forEach(card => {
@@ -167,30 +96,10 @@ socket.on('revote', (data) => {
 });
 
 // Début de la discussion
-socket.on('startDiscussion', (data) => {
-    const { message, extremeVotes } = data;
-    Swal.fire('Discussion', `${message}\nVotes extrêmes : ${extremeVotes.lowest} et ${extremeVotes.highest}`, 'info');
-    // Afficher le chat
-    chatDiv.style.display = 'block';
-    // Afficher le timer
-    discussionTimerDisplay.style.display = 'block';
-    startDiscussionTimer();
-});
+socket.on('startDiscussion', startDiscussion);
 
 // Notification que la discussion a commencé
-socket.on('discussionStarted', (data) => {
-    const { message, extremeVotes } = data;
-    Swal.fire('Discussion en cours', `${message}\nVotes extrêmes : ${extremeVotes.lowest} et ${extremeVotes.highest}`, 'info');
-    // Afficher le chat
-    chatDiv.style.display = 'block';
-    // Afficher le timer
-    discussionTimerDisplay.style.display = 'block';
-    startDiscussionTimer();
-    // Si le joueur est le créateur, afficher le bouton pour terminer le débat
-    if (socket.id === data.creatorId) {
-        forceEndDiscussionBtn.style.display = 'block';
-    }
-});
+socket.on('discussionStarted', discussionStarted);
 
 // Fonction pour démarrer le timer côté client
 let discussionTimerInterval;
@@ -234,14 +143,7 @@ socket.on('revote', (data) => {
 });
 
 // Réception des messages de chat
-socket.on('receiveMessage', (data) => {
-    const { username: sender, message } = data;
-    const p = document.createElement('p');
-    p.innerHTML = `<strong>${sender}:</strong> ${message}`;
-    chatMessages.appendChild(p);
-    // Faire défiler vers le bas
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-});
+socket.on('receiveMessage', receiveMessage);
 
 // Envoi des messages de chat
 sendChatBtn.addEventListener('click', () => {
@@ -265,18 +167,10 @@ forceEndDiscussionBtn.addEventListener('click', () => {
 });
 
 // Fin du jeu
-socket.on('gameFinished', (backlog) => {
-    console.log('Jeu terminé. Backlog estimé :', backlog);
-    Swal.fire('Jeu terminé', 'Le backlog a été entièrement estimé. Les résultats ont été sauvegardés.', 'success');
-    resultsDiv.style.display = 'block';
-    results.textContent = JSON.stringify(backlog, null, 2);
-});
+socket.on('gameFinished', gameFinished);
 
 // Gestion des erreurs
-socket.on('error', (message) => {
-    console.error('Erreur reçue du serveur :', message);
-    Swal.fire('Erreur', message, 'error');
-});
+socket.on('error', showError);
 
 // Chargement d'une partie sauvegardée
 loadGameBtn.addEventListener('click', () => {
@@ -289,17 +183,165 @@ loadGameBtn.addEventListener('click', () => {
 });
 
 // Confirmation du chargement de la partie
-socket.on('gameLoaded', (roomData) => {
+socket.on('gameLoaded', gameLoaded);
+
+// Gestion du jeu en pause (suite à la carte "Café")
+socket.on('gamePaused', gamePaused);
+
+
+/* Méthodes
+*/
+function roomCreation(room){
+    document.getElementById('menu').style.display = 'none';
+    document.getElementById('game').style.display = 'block';
+    roomNameDisplay.textContent = roomName;
+}
+
+function roomsAvailable(rooms){
+    availableRoomsList.innerHTML = '';
+
+    // Pour chaque salle disponible, créer un élément de liste avec un bouton "Rejoindre"
+    rooms.forEach(roomInfo => {
+        const { roomName: roomNameFromList, currentPlayers, maxPlayers } = roomInfo;
+        const li = document.createElement('li');
+        li.textContent = `${roomNameFromList} (${currentPlayers}/${maxPlayers} joueurs) `;
+
+        if (currentPlayers < maxPlayers) {
+            const joinButton = document.createElement('button');
+            joinButton.textContent = 'Rejoindre';
+            joinButton.addEventListener('click', () => {
+                Swal.fire({
+                    title: 'Entrez votre pseudo :',
+                    input: 'text',
+                    inputPlaceholder: 'Votre pseudo',
+                    showCancelButton: true,
+                    confirmButtonText: 'Rejoindre',
+                    cancelButtonText: 'Annuler'
+                }).then((result) => {
+                    if (result.isConfirmed && result.value) {
+                        username = result.value;
+                        roomName = roomNameFromList; 
+                        console.log('Tentative de rejoindre la salle :', roomName, 'avec le pseudo :', username);
+                        socket.emit('joinRoom', { roomName, username });
+                    }
+                });
+            });
+            li.appendChild(joinButton);
+        } else {
+            const fullLabel = document.createElement('span');
+            fullLabel.textContent = ' (Salle pleine)';
+            li.appendChild(fullLabel);
+        }
+
+        availableRoomsList.appendChild(li);
+    });
+}
+
+function roomJoined(){
+    console.log('Vous avez rejoint la salle :', roomName);
+    document.getElementById('menu').style.display = 'none';
+    document.getElementById('game').style.display = 'block';
+    roomNameDisplay.textContent = roomName;
+}
+
+function updatePlayers(players){
+    playersList.innerHTML = '';
+    players.forEach(player => {
+        const li = document.createElement('li');
+        li.textContent = player;
+        playersList.appendChild(li);
+    });
+}
+
+function startVote(feature){
+    console.log('Démarrage du vote pour la fonctionnalité :', feature.description);
+    document.getElementById('menu').style.display = 'none';
+    document.getElementById('game').style.display = 'block';
+    roomNameDisplay.textContent = roomName;
+    featureDescription.textContent = feature.description;
+    // Réactiver les boutons de vote pour le nouveau tour
+    cards.forEach(btn => btn.disabled = false);
+    // Cacher le chat pendant le vote
+    chatDiv.style.display = 'none';
+    chatMessages.innerHTML = '';
+    // Cacher le timer et le bouton de fin de discussion
+    discussionTimerDisplay.style.display = 'none';
+    forceEndDiscussionBtn.style.display = 'none';
+}
+
+function featureEstimated(data){
+    const { feature, estimatedDifficulty } = data;
+    Swal.fire('Difficulté estimée', `La fonctionnalité "${feature.description}" a été estimée à ${estimatedDifficulty}.`, 'success');
+}
+
+function revote(data){
+    console.log('Re-vote requis :', data.message);
+    Swal.fire('Re-vote', data.message, 'warning');
+    featureDescription.textContent = data.feature.description;
+    // Réactiver les boutons
+    cards.forEach(btn => btn.disabled = false);
+    // Cacher le chat
+    chatDiv.style.display = 'none';
+    chatMessages.innerHTML = '';
+}
+
+function startDiscussion(data){
+    const { message, extremeVotes } = data;
+    Swal.fire('Discussion', `${message}\nVotes extrêmes : ${extremeVotes.lowest} et ${extremeVotes.highest}`, 'info');
+    // Afficher le chat
+    chatDiv.style.display = 'block';
+    // Afficher le timer
+    discussionTimerDisplay.style.display = 'block';
+    startDiscussionTimer();
+}
+
+// Notification que la discussion a commencé
+function discussionStarted(data){
+    const { message, extremeVotes } = data;
+    Swal.fire('Discussion en cours', `${message}\nVotes extrêmes : ${extremeVotes.lowest} et ${extremeVotes.highest}`, 'info');
+    // Afficher le chat
+    chatDiv.style.display = 'block';
+    // Afficher le timer
+    discussionTimerDisplay.style.display = 'block';
+    startDiscussionTimer();
+    // Si le joueur est le créateur, afficher le bouton pour terminer le débat
+    if (socket.id === data.creatorId) {
+        forceEndDiscussionBtn.style.display = 'block';
+    }
+}
+
+
+
+function receiveMessage(data){
+    const { username: sender, message } = data;
+    const p = document.createElement('p');
+    p.innerHTML = `<strong>${sender}:</strong> ${message}`;
+    chatMessages.appendChild(p);
+    // Faire défiler vers le bas
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function gameFinished(backlog){
+    console.log('Jeu terminé. Backlog estimé :', backlog);
+    Swal.fire('Jeu terminé', 'Le backlog a été entièrement estimé. Les résultats ont été sauvegardés.', 'success');
+    resultsDiv.style.display = 'block';
+    results.textContent = JSON.stringify(backlog, null, 2);
+}
+
+function showError(message){
+    console.error('Erreur reçue du serveur :', message);
+    Swal.fire('Erreur', message, 'error');
+}
+
+function gameLoaded(roomData){    
     console.log('Partie chargée :', roomData);
     document.getElementById('menu').style.display = 'none';
     document.getElementById('game').style.display = 'block';
     roomNameDisplay.textContent = roomName;
     Swal.fire('Partie chargée', `Partie ${roomName} chargée. Rejoignez la salle pour continuer.`, 'success');
-});
+}
 
-// Gestion du jeu en pause (suite à la carte "Café")
-socket.on('gamePaused', (message) => {
+function gamePaused(message){
     console.log('Jeu en pause :', message);
     Swal.fire('Jeu en pause', message, 'info');
-   
-});
+}

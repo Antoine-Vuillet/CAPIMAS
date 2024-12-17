@@ -234,68 +234,111 @@ function handleVotingResult(roomName) {
         io.to(roomName).emit('gamePaused', 'Tous les joueurs ont choisi "Café". La partie est sauvegardée.');
         return;
     }
-
-    // Vérifie si tous les votes sont identiques
-    if (votes.every(v => v === votes[0])) {
+    if(gameMode == "mean"){
+        const somme = votes.reduce((acc, val) => acc + val, 0);
+        const moyenne = somme / votes.length;
+        const valeursPossibles = [1, 2, 3, 5, 8, 13, 20, 40, 100];
+        const valeurLaPlusProche = valeursPossibles.reduce((plusProche, valeur) => {
+            return Math.abs(valeur - moyenne) < Math.abs(plusProche - moyenne) ? valeur : plusProche;
+        });
         decisionMade = true;
-        estimatedDifficulty = votes[0];
-    } else {
-        // Identifie les deux extrêmes
-        const numericVotes = votesArray.filter(v => !isNaN(v.vote)).map(v => ({ ...v, vote: parseInt(v.vote), socketId: getSocketIdByUsername(roomName, v.username) }));
-        if (numericVotes.length > 1) {
-            const sortedVotes = numericVotes.sort((a, b) => a.vote - b.vote);
-            const lowest = sortedVotes[0];
-            const highest = sortedVotes[sortedVotes.length - 1];
+        estimatedDifficulty = valeurLaPlusProche;
+    }else if(gameMode == "median"){
+        votes.sort()
+        const n = sortedVotes.length;
+        const isPair = n % 2 === 0;
+        if (!isPair) {
+            return sortedVotes[Math.floor(n / 2)];
+        }
+        return (sortedVotes[n / 2 - 1] + sortedVotes[n / 2]) / 2;
+    }else if(gameMode == "plurality"){
+        const voteCounts = {};
 
-            // Stocke les socket.id des extrêmes
-            room.extremes = [lowest.socketId, highest.socketId];
+        // Count votes for each option
+        votes.forEach(vote => {
+            voteCounts[vote] = (voteCounts[vote] || 0) + 1;
+        });
 
-            // Change l'état de la salle en 'discussion'
-            room.state = 'discussion';
+        // Find the option with the most votes
+        let pluralityOption = null;
+        let maxVotes = 0;
 
-            // Informe les extrêmes qu'un débat est nécessaire
-            io.to(lowest.socketId).emit('startDiscussion', {
-                message: `Vous êtes l'un des extrêmes (${lowest.vote}), veuillez débattre.`,
-                extremeVotes: { lowest: lowest.vote, highest: highest.vote }
-            });
-            io.to(highest.socketId).emit('startDiscussion', {
-                message: `Vous êtes l'un des extrêmes (${highest.vote}), veuillez débattre.`,
-                extremeVotes: { lowest: lowest.vote, highest: highest.vote }
-            });
-
-            // Informe tous les joueurs qu'un débat est en cours
-            io.to(roomName).emit('discussionStarted', {
-                message: `Un débat est nécessaire entre les deux extrêmes (${lowest.vote} et ${highest.vote}).`,
-                creatorId: room.creatorId,
-                extremeVotes: { lowest: lowest.vote, highest: highest.vote }
-            });
-
-            // Démarre le timer de 2 minutes
-            room.discussionEndTime = Date.now() + 2 * 60 * 1000; // 2 minutes en millisecondes
-            room.discussionTimer = setTimeout(() => {
-                endDiscussion(roomName);
-            }, 2 * 60 * 1000);
-
-            // Réinitialise les votes pour le débat
-            for (const playerId in room.players) {
-                room.players[playerId].hasVoted = false;
+        for (const option in voteCounts) {
+            if (voteCounts[option] > maxVotes) {
+                maxVotes = voteCounts[option];
+                pluralityOption = option;  // Set this option as the one with the most votes
             }
-            room.votes = {};
-            return;
-        } else {
-            // Si les votes ne sont pas numériques, demande un revote
-            io.to(roomName).emit('revote', {
-                feature: room.backlog[room.currentFeatureIndex],
-                message: 'Votes non valides, veuillez revoter.'
-            });
-            // Réinitialise les votes
-            for (const playerId in room.players) {
-                room.players[playerId].hasVoted = false;
+        }
+        decisionMade = true;
+        estimatedDifficulty = pluralityOption;
+    }else{
+        // Vérifie si tous les votes sont identiques
+        if (gameMode == "strict" && votes.every(v => v === votes[0])) {
+            decisionMade = true;
+            estimatedDifficulty = votes[0];
+        } else  if(gameMode == "absmajority" && IsAbsMaj(votes)){
+            decisionMade = true;
+            estimatedDifficulty = IsAbsMaj(votes);
+        }else{
+            // Identifie les deux extrêmes
+            const numericVotes = votesArray.filter(v => !isNaN(v.vote)).map(v => ({ ...v, vote: parseInt(v.vote), socketId: getSocketIdByUsername(roomName, v.username) }));
+            if (numericVotes.length > 1) {
+                const sortedVotes = numericVotes.sort((a, b) => a.vote - b.vote);
+                const lowest = sortedVotes[0];
+                const highest = sortedVotes[sortedVotes.length - 1];
+
+                // Stocke les socket.id des extrêmes
+                room.extremes = [lowest.socketId, highest.socketId];
+
+                // Change l'état de la salle en 'discussion'
+                room.state = 'discussion';
+
+                // Informe les extrêmes qu'un débat est nécessaire
+                io.to(lowest.socketId).emit('startDiscussion', {
+                    message: `Vous êtes l'un des extrêmes (${lowest.vote}), veuillez débattre.`,
+                    extremeVotes: { lowest: lowest.vote, highest: highest.vote }
+                });
+                io.to(highest.socketId).emit('startDiscussion', {
+                    message: `Vous êtes l'un des extrêmes (${highest.vote}), veuillez débattre.`,
+                    extremeVotes: { lowest: lowest.vote, highest: highest.vote }
+                });
+
+                // Informe tous les joueurs qu'un débat est en cours
+                io.to(roomName).emit('discussionStarted', {
+                    message: `Un débat est nécessaire entre les deux extrêmes (${lowest.vote} et ${highest.vote}).`,
+                    creatorId: room.creatorId,
+                    extremeVotes: { lowest: lowest.vote, highest: highest.vote }
+                });
+
+                // Démarre le timer de 2 minutes
+                room.discussionEndTime = Date.now() + 2 * 60 * 1000; // 2 minutes en millisecondes
+                room.discussionTimer = setTimeout(() => {
+                    endDiscussion(roomName);
+                }, 2 * 60 * 1000);
+
+                // Réinitialise les votes pour le débat
+                for (const playerId in room.players) {
+                    room.players[playerId].hasVoted = false;
+                }
+                room.votes = {};
+                return;
+            } else {
+                // Si les votes ne sont pas numériques, demande un revote
+                io.to(roomName).emit('revote', {
+                    feature: room.backlog[room.currentFeatureIndex],
+                    message: 'Votes non valides, veuillez revoter.'
+                });
+                // Réinitialise les votes
+                for (const playerId in room.players) {
+                    room.players[playerId].hasVoted = false;
+                }
+                room.votes = {};
+                return;
             }
-            room.votes = {};
-            return;
         }
     }
+
+    
 
     if (decisionMade) {
         console.log(`Décision prise pour la salle ${roomName}: Difficulté estimée = ${estimatedDifficulty}`);
@@ -330,6 +373,26 @@ function handleVotingResult(roomName) {
         }
     }
 }
+
+function IsAbsMaj(votes) {
+    const voteCounts = {};
+
+    votes.forEach(vote => {
+        voteCounts[vote] = (voteCounts[vote] || 0) + 1;
+    });
+
+    const totalVotes = votes.length;
+    const majorityThreshold = totalVotes / 2;
+
+    for (const option in voteCounts) {
+        if (voteCounts[option] > majorityThreshold) {
+            return option;
+        }
+    }
+
+    return null;  // No absolute majority
+}
+
 
 // Fonction pour terminer le débat et lancer le revote
 function endDiscussion(roomName) {
