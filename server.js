@@ -30,188 +30,25 @@ io.on('connection', (socket) => {
     socket.emit('availableRooms', getAvailableRooms());
 
     // Crée une salle
-    socket.on('createRoom', (data) => {
-        const { roomName, maxPlayers, username, gameMode, backlog } = data;
-        if (rooms[roomName]) {
-            socket.emit('error', 'Une salle avec ce nom existe déjà.');
-            return;
-        }
-        rooms[roomName] = {
-            creatorId: socket.id,
-            players: {},
-            maxPlayers,
-            gameMode,
-            backlog,
-            currentFeatureIndex: 0,
-            votes: {},
-            state: 'waiting', 
-            firstRound: true,
-            discussionTimer: null,
-            discussionEndTime: null,
-            extremes: [] 
-        };
-
-        // Ajoute le créateur à la liste des joueurs
-        rooms[roomName].players[socket.id] = { username, hasVoted: false };
-        socket.join(roomName);
-        io.to(roomName).emit('updatePlayers', Object.values(rooms[roomName].players).map(p => p.username));
-        socket.emit('roomCreated', roomName);
-
-        // Met à jour la liste des salles disponibles pour tous les clients
-        io.emit('availableRooms', getAvailableRooms());
-
-        // Vérifie si la salle est pleine pour démarrer le jeu
-        if (Object.keys(rooms[roomName].players).length === rooms[roomName].maxPlayers) {
-            rooms[roomName].state = 'voting';
-            io.to(roomName).emit('startVoting', rooms[roomName].backlog[rooms[roomName].currentFeatureIndex]);
-        }
-    });
+    socket.on('createRoom', createRoom );
 
     // Rejoint une salle
-    socket.on('joinRoom', (data) => {
-        const { roomName, username } = data;
-        console.log('Demande de rejoindre la salle :', roomName, 'par le joueur :', username);
-        const room = rooms[roomName];
-        if (!room) {
-            socket.emit('error', "La salle n'existe pas.");
-            return;
-        }
-        if (Object.keys(room.players).length >= room.maxPlayers) {
-            socket.emit('error', 'La salle est pleine.');
-            return;
-        }
-        room.players[socket.id] = { username, hasVoted: false };
-        socket.join(roomName);
-        io.to(roomName).emit('updatePlayers', Object.values(room.players).map(p => p.username));
-
-        // Émettre un événement au joueur qui vient de rejoindre
-        socket.emit('roomJoined');
-
-        // Met à jour la liste des salles disponibles pour tous les clients
-        io.emit('availableRooms', getAvailableRooms());
-
-        // Vérifie si la salle est pleine pour démarrer le jeu
-        if (Object.keys(room.players).length === room.maxPlayers) {
-            room.state = 'voting';
-            io.to(roomName).emit('startVoting', room.backlog[room.currentFeatureIndex]);
-        }
-    });
+    socket.on('joinRoom', joinRoom );
 
     // Reçoit un vote
-    socket.on('vote', (data) => {
-        const { roomName, vote } = data;
-        const room = rooms[roomName];
-        if (!room) {
-            console.error(`Salle non trouvée pour le vote : ${roomName}`);
-            return;
-        }
-        const player = room.players[socket.id];
-        if (!player) {
-            console.error(`Joueur non trouvé dans la salle ${roomName} pour le socket ${socket.id}`);
-            return;
-        }
-
-        player.hasVoted = true;
-        room.votes[socket.id] = { username: player.username, vote };
-
-        console.log(`Vote reçu de ${player.username} dans la salle ${roomName}: ${vote}`);
-
-        // Vérifier si tous les joueurs ont voté
-        const allVoted = Object.values(room.players).every(p => p.hasVoted);
-        console.log(`Tous les joueurs ont voté dans la salle ${roomName}: ${allVoted}`);
-        if (allVoted) {
-            console.log(`Traitement des votes pour la salle ${roomName}`);
-            handleVotingResult(roomName);
-        }
-    });
+    socket.on('vote', vote );
 
     // Gestion de la réception des messages de chat
-    socket.on('sendMessage', (data) => {
-        const { roomName, message } = data;
-        const room = rooms[roomName];
-        if (!room) return;
-        const player = room.players[socket.id];
-        if (!player) return;
-
-        // Si on est en phase de discussion, vérifier si le joueur est autorisé à envoyer des messages
-        if (room.state === 'discussion') {
-            if (!room.extremes.includes(socket.id)) {
-                // Le joueur n'est pas autorisé à discuter
-                socket.emit('error', 'Vous ne pouvez pas envoyer de messages pendant la discussion.');
-                return;
-            }
-        }
-
-        io.to(roomName).emit('receiveMessage', { username: player.username, message });
-    });
+    socket.on('sendMessage', sendMessage );
 
     // Gestion de la fin forcée du débat par le créateur
-    socket.on('forceEndDiscussion', (roomName) => {
-        const room = rooms[roomName];
-        if (!room) return;
-
-        if (socket.id !== room.creatorId) {
-            socket.emit('error', 'Seul le créateur de la salle peut forcer la fin du débat.');
-            return;
-        }
-
-        if (room.state !== 'discussion') {
-            socket.emit('error', 'Aucun débat en cours.');
-            return;
-        }
-
-        endDiscussion(roomName);
-    });
+    socket.on('forceEndDiscussion', forceEndDiscussion );
 
     // Gestion de la déconnexion
-    socket.on('disconnect', () => {
-        let roomDeleted = false;
-
-        for (const roomName in rooms) {
-            const room = rooms[roomName];
-            if (room.players[socket.id]) {
-                delete room.players[socket.id];
-                io.to(roomName).emit('updatePlayers', Object.values(room.players).map(p => p.username));
-
-                // Si plus de joueurs, supprime la salle
-                if (Object.keys(room.players).length === 0) {
-                    delete rooms[roomName];
-                    roomDeleted = true;
-                } else {
-                    // Met à jour la liste des salles disponibles
-                    io.emit('availableRooms', getAvailableRooms());
-                }
-                break;
-            }
-        }
-
-        // Si une salle a été supprimée, met à jour la liste des salles disponibles
-        if (roomDeleted) {
-            io.emit('availableRooms', getAvailableRooms());
-        }
-
-        console.log('Utilisateur déconnecté :', socket.id);
-    });
+    socket.on('disconnect', disconnect );
 
     // Charge une partie sauvegardée
-    socket.on('loadGame', (data) => {
-        const { roomName } = data;
-        fs.readFile(`saved_games/${roomName}.json`, 'utf8', (err, jsonString) => {
-            if (err) {
-                console.error(`Erreur lors de la lecture du fichier : ${err.message}`);
-                socket.emit('error', 'Erreur lors du chargement de la partie.');
-                return;
-            }
-            try {
-                rooms[roomName] = JSON.parse(jsonString);
-                socket.join(roomName);
-                socket.emit('gameLoaded', rooms[roomName]);
-            } catch (parseErr) {
-                console.error(`Erreur lors du parsing du JSON : ${parseErr.message}`);
-                socket.emit('error', 'Erreur lors du chargement de la partie (JSON invalide).');
-            }
-        });
-    });
+    socket.on('loadGame', loadGame );
 });
 
 // Fonction pour gérer le résultat du vote
@@ -452,6 +289,183 @@ function saveResults(roomName, backlog) {
             console.error('Erreur lors de la sauvegarde des résultats :', err.message);
         } else {
             console.log(`Résultats sauvegardés pour la salle ${roomName}`);
+        }
+    });
+}
+
+function createRoom(data){
+    const { roomName, maxPlayers, username, gameMode, backlog } = data;
+    if (rooms[roomName]) {
+        socket.emit('error', 'Une salle avec ce nom existe déjà.');
+        return;
+    }
+    rooms[roomName] = {
+        creatorId: socket.id,
+        players: {},
+        maxPlayers,
+        gameMode,
+        backlog,
+        currentFeatureIndex: 0,
+        votes: {},
+        state: 'waiting', 
+        firstRound: true,
+        discussionTimer: null,
+        discussionEndTime: null,
+        extremes: [] 
+    };
+
+    // Ajoute le créateur à la liste des joueurs
+    rooms[roomName].players[socket.id] = { username, hasVoted: false };
+    socket.join(roomName);
+    io.to(roomName).emit('updatePlayers', Object.values(rooms[roomName].players).map(p => p.username));
+    socket.emit('roomCreated', roomName);
+
+    // Met à jour la liste des salles disponibles pour tous les clients
+    io.emit('availableRooms', getAvailableRooms());
+
+    // Vérifie si la salle est pleine pour démarrer le jeu
+    if (Object.keys(rooms[roomName].players).length === rooms[roomName].maxPlayers) {
+        rooms[roomName].state = 'voting';
+        io.to(roomName).emit('startVoting', rooms[roomName].backlog[rooms[roomName].currentFeatureIndex]);
+    }
+}
+
+function joinRoom(data){
+    const { roomName, username } = data;
+    console.log('Demande de rejoindre la salle :', roomName, 'par le joueur :', username);
+    const room = rooms[roomName];
+    if (!room) {
+        socket.emit('error', "La salle n'existe pas.");
+        return;
+    }
+    if (Object.keys(room.players).length >= room.maxPlayers) {
+        socket.emit('error', 'La salle est pleine.');
+        return;
+    }
+    room.players[socket.id] = { username, hasVoted: false };
+    socket.join(roomName);
+    io.to(roomName).emit('updatePlayers', Object.values(room.players).map(p => p.username));
+
+    // Émettre un événement au joueur qui vient de rejoindre
+    socket.emit('roomJoined');
+
+    // Met à jour la liste des salles disponibles pour tous les clients
+    io.emit('availableRooms', getAvailableRooms());
+
+    // Vérifie si la salle est pleine pour démarrer le jeu
+    if (Object.keys(room.players).length === room.maxPlayers) {
+        room.state = 'voting';
+        io.to(roomName).emit('startVoting', room.backlog[room.currentFeatureIndex]);
+    }
+}
+
+function vote(data){
+    const { roomName, vote } = data;
+    const room = rooms[roomName];
+    if (!room) {
+        console.error(`Salle non trouvée pour le vote : ${roomName}`);
+        return;
+    }
+    const player = room.players[socket.id];
+    if (!player) {
+        console.error(`Joueur non trouvé dans la salle ${roomName} pour le socket ${socket.id}`);
+        return;
+    }
+
+    player.hasVoted = true;
+    room.votes[socket.id] = { username: player.username, vote };
+
+    console.log(`Vote reçu de ${player.username} dans la salle ${roomName}: ${vote}`);
+
+    // Vérifier si tous les joueurs ont voté
+    const allVoted = Object.values(room.players).every(p => p.hasVoted);
+    console.log(`Tous les joueurs ont voté dans la salle ${roomName}: ${allVoted}`);
+    if (allVoted) {
+        console.log(`Traitement des votes pour la salle ${roomName}`);
+        handleVotingResult(roomName);
+    }
+}
+
+function sendMessage(data){
+    const { roomName, message } = data;
+    const room = rooms[roomName];
+    if (!room) return;
+    const player = room.players[socket.id];
+    if (!player) return;
+
+    // Si on est en phase de discussion, vérifier si le joueur est autorisé à envoyer des messages
+    if (room.state === 'discussion') {
+        if (!room.extremes.includes(socket.id)) {
+            // Le joueur n'est pas autorisé à discuter
+            socket.emit('error', 'Vous ne pouvez pas envoyer de messages pendant la discussion.');
+            return;
+        }
+    }
+
+    io.to(roomName).emit('receiveMessage', { username: player.username, message });
+}
+
+function forceEndDiscussion(roomName){
+    const room = rooms[roomName];
+    if (!room) return;
+
+    if (socket.id !== room.creatorId) {
+        socket.emit('error', 'Seul le créateur de la salle peut forcer la fin du débat.');
+        return;
+    }
+
+    if (room.state !== 'discussion') {
+        socket.emit('error', 'Aucun débat en cours.');
+        return;
+    }
+
+    endDiscussion(roomName);
+}
+
+function disconnect(){
+    let roomDeleted = false;
+
+    for (const roomName in rooms) {
+        const room = rooms[roomName];
+        if (room.players[socket.id]) {
+            delete room.players[socket.id];
+            io.to(roomName).emit('updatePlayers', Object.values(room.players).map(p => p.username));
+
+            // Si plus de joueurs, supprime la salle
+            if (Object.keys(room.players).length === 0) {
+                delete rooms[roomName];
+                roomDeleted = true;
+            } else {
+                // Met à jour la liste des salles disponibles
+                io.emit('availableRooms', getAvailableRooms());
+            }
+            break;
+        }
+    }
+
+    // Si une salle a été supprimée, met à jour la liste des salles disponibles
+    if (roomDeleted) {
+        io.emit('availableRooms', getAvailableRooms());
+    }
+
+    console.log('Utilisateur déconnecté :', socket.id);
+}
+
+function loadGame(data){
+    const { roomName } = data;
+    fs.readFile(`saved_games/${roomName}.json`, 'utf8', (err, jsonString) => {
+        if (err) {
+            console.error(`Erreur lors de la lecture du fichier : ${err.message}`);
+            socket.emit('error', 'Erreur lors du chargement de la partie.');
+            return;
+        }
+        try {
+            rooms[roomName] = JSON.parse(jsonString);
+            socket.join(roomName);
+            socket.emit('gameLoaded', rooms[roomName]);
+        } catch (parseErr) {
+            console.error(`Erreur lors du parsing du JSON : ${parseErr.message}`);
+            socket.emit('error', 'Erreur lors du chargement de la partie (JSON invalide).');
         }
     });
 }

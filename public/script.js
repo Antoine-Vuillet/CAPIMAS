@@ -84,16 +84,7 @@ cards.forEach(card => {
 });
 
 // Re-vote en cas de désaccord
-socket.on('revote', (data) => {
-    console.log('Re-vote requis :', data.message);
-    Swal.fire('Re-vote', data.message, 'warning');
-    featureDescription.textContent = data.feature.description;
-    // Réactiver les boutons
-    cards.forEach(btn => btn.disabled = false);
-    // Cacher le chat
-    chatDiv.style.display = 'none';
-    chatMessages.innerHTML = '';
-});
+socket.on('revote', revote);
 
 // Début de la discussion
 socket.on('startDiscussion', startDiscussion);
@@ -124,23 +115,6 @@ function formatTime(time) {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
-// Gestion de la fin du débat
-socket.on('revote', (data) => {
-    // Arrêter le timer
-    if (discussionTimerInterval) {
-        clearInterval(discussionTimerInterval);
-    }
-    discussionTimerDisplay.style.display = 'none';
-    forceEndDiscussionBtn.style.display = 'none';
-    // Afficher le message de revote
-    Swal.fire('Re-vote', data.message, 'info');
-    featureDescription.textContent = data.feature.description;
-    // Réactiver les boutons
-    cards.forEach(btn => btn.disabled = false);
-    // Cacher le chat
-    chatDiv.style.display = 'none';
-    chatMessages.innerHTML = '';
-});
 
 // Réception des messages de chat
 socket.on('receiveMessage', receiveMessage);
@@ -275,8 +249,14 @@ function featureEstimated(data){
 }
 
 function revote(data){
-    console.log('Re-vote requis :', data.message);
-    Swal.fire('Re-vote', data.message, 'warning');
+    // Arrêter le timer
+    if (discussionTimerInterval) {
+        clearInterval(discussionTimerInterval);
+    }
+    discussionTimerDisplay.style.display = 'none';
+    forceEndDiscussionBtn.style.display = 'none';
+    // Afficher le message de revote
+    Swal.fire('Re-vote', data.message, 'info');
     featureDescription.textContent = data.feature.description;
     // Réactiver les boutons
     cards.forEach(btn => btn.disabled = false);
