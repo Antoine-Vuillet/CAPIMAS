@@ -8,7 +8,8 @@
   },
   
     "scripts": {
-      "test": "jest --coverage"
+      "test": "jest --coverage",
+      "coverage": "jest --json --coverage --outputFile=report.json"
     }
   
 }
