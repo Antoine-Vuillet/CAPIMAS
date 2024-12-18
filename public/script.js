@@ -55,14 +55,123 @@ createRoomBtn.addEventListener('click', () => {
 });
 
 // Réception de la confirmation de création de salle
-socket.on('roomCreated', (room) => {
+socket.on('roomCreated', roomCreation);
+
+// Réception de la liste des salles disponibles
+socket.on('availableRooms', roomsAvailable);
+
+// Confirmation de la jonction de la salle
+socket.on('roomJoined', roomJoined);
+
+// Mise à jour de la liste des joueurs dans la salle
+socket.on('updatePlayers', updatePlayers);
+
+// Démarrage du vote
+socket.on('startVoting', startVote);
+
+// Réception de la difficulté estimée
+socket.on('featureEstimated', featureEstimated);
+
+// Gestion du vote
+cards.forEach(card => {
+    card.addEventListener('click', () => {
+        const vote = card.getAttribute('data-value');
+        socket.emit('vote', { roomName, vote });
+        console.log(`Vous avez voté : ${vote}`);
+        // Désactiver les boutons après le vote
+        cards.forEach(btn => btn.disabled = true);
+    });
+});
+
+// Re-vote en cas de désaccord
+socket.on('revote', revote);
+
+// Début de la discussion
+socket.on('startDiscussion', startDiscussion);
+
+// Notification que la discussion a commencé
+socket.on('discussionStarted', discussionStarted);
+
+// Fonction pour démarrer le timer côté client
+let discussionTimerInterval;
+function startDiscussionTimer() {
+    let timeLeft = 2 * 60; // 2 minutes en secondes
+    discussionTimerDisplay.textContent = `Temps restant pour le débat : ${formatTime(timeLeft)}`;
+    discussionTimerInterval = setInterval(() => {
+        timeLeft--;
+        discussionTimerDisplay.textContent = `Temps restant pour le débat : ${formatTime(timeLeft)}`;
+        if (timeLeft <= 0) {
+            clearInterval(discussionTimerInterval);
+            discussionTimerDisplay.style.display = 'none';
+            forceEndDiscussionBtn.style.display = 'none';
+        }
+    }, 1000);
+}
+
+// Fonction pour formater le temps en mm:ss
+function formatTime(time) {
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+
+// Réception des messages de chat
+socket.on('receiveMessage', receiveMessage);
+
+// Envoi des messages de chat
+sendChatBtn.addEventListener('click', () => {
+    const message = chatInput.value;
+    if (message) {
+        socket.emit('sendMessage', { roomName, message });
+        chatInput.value = '';
+    }
+});
+
+// Envoi du message en appuyant sur Entrée
+chatInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        sendChatBtn.click();
+    }
+});
+
+// Bouton pour forcer la fin du débat
+forceEndDiscussionBtn.addEventListener('click', () => {
+    socket.emit('forceEndDiscussion', roomName);
+});
+
+// Fin du jeu
+socket.on('gameFinished', gameFinished);
+
+// Gestion des erreurs
+socket.on('error', showError);
+
+// Chargement d'une partie sauvegardée
+loadGameBtn.addEventListener('click', () => {
+    roomName = document.getElementById('loadRoomNameInput').value;
+    if (roomName) {
+        socket.emit('loadGame', { roomName });
+    } else {
+        Swal.fire('Erreur', 'Veuillez entrer un nom de salle.', 'error');
+    }
+});
+
+// Confirmation du chargement de la partie
+socket.on('gameLoaded', gameLoaded);
+
+// Gestion du jeu en pause (suite à la carte "Café")
+socket.on('gamePaused', gamePaused);
+
+
+/* Méthodes
+*/
+function roomCreation(room){
     document.getElementById('menu').style.display = 'none';
     document.getElementById('game').style.display = 'block';
     roomNameDisplay.textContent = roomName;
-});
+}
 
-// Réception de la liste des salles disponibles
-socket.on('availableRooms', (rooms) => {
+function roomsAvailable(rooms){
     availableRoomsList.innerHTML = '';
 
     // Pour chaque salle disponible, créer un élément de liste avec un bouton "Rejoindre"
@@ -100,28 +209,25 @@ socket.on('availableRooms', (rooms) => {
 
         availableRoomsList.appendChild(li);
     });
-});
+}
 
-// Confirmation de la jonction de la salle
-socket.on('roomJoined', () => {
+function roomJoined(){
     console.log('Vous avez rejoint la salle :', roomName);
     document.getElementById('menu').style.display = 'none';
     document.getElementById('game').style.display = 'block';
     roomNameDisplay.textContent = roomName;
-});
+}
 
-// Mise à jour de la liste des joueurs dans la salle
-socket.on('updatePlayers', (players) => {
+function updatePlayers(players){
     playersList.innerHTML = '';
     players.forEach(player => {
         const li = document.createElement('li');
         li.textContent = player;
         playersList.appendChild(li);
     });
-});
+}
 
-// Démarrage du vote
-socket.on('startVoting', (feature) => {
+function startVote(feature){
     console.log('Démarrage du vote pour la fonctionnalité :', feature.description);
     document.getElementById('menu').style.display = 'none';
     document.getElementById('game').style.display = 'block';
@@ -135,88 +241,14 @@ socket.on('startVoting', (feature) => {
     // Cacher le timer et le bouton de fin de discussion
     discussionTimerDisplay.style.display = 'none';
     forceEndDiscussionBtn.style.display = 'none';
-});
+}
 
-// Réception de la difficulté estimée
-socket.on('featureEstimated', (data) => {
+function featureEstimated(data){
     const { feature, estimatedDifficulty } = data;
     Swal.fire('Difficulté estimée', `La fonctionnalité "${feature.description}" a été estimée à ${estimatedDifficulty}.`, 'success');
-});
-
-// Gestion du vote
-cards.forEach(card => {
-    card.addEventListener('click', () => {
-        const vote = card.getAttribute('data-value');
-        socket.emit('vote', { roomName, vote });
-        console.log(`Vous avez voté : ${vote}`);
-        // Désactiver les boutons après le vote
-        cards.forEach(btn => btn.disabled = true);
-    });
-});
-
-// Re-vote en cas de désaccord
-socket.on('revote', (data) => {
-    console.log('Re-vote requis :', data.message);
-    Swal.fire('Re-vote', data.message, 'warning');
-    featureDescription.textContent = data.feature.description;
-    // Réactiver les boutons
-    cards.forEach(btn => btn.disabled = false);
-    // Cacher le chat
-    chatDiv.style.display = 'none';
-    chatMessages.innerHTML = '';
-});
-
-// Début de la discussion
-socket.on('startDiscussion', (data) => {
-    const { message, extremeVotes } = data;
-    Swal.fire('Discussion', `${message}\nVotes extrêmes : ${extremeVotes.lowest} et ${extremeVotes.highest}`, 'info');
-    // Afficher le chat
-    chatDiv.style.display = 'block';
-    // Afficher le timer
-    discussionTimerDisplay.style.display = 'block';
-    startDiscussionTimer();
-});
-
-// Notification que la discussion a commencé
-socket.on('discussionStarted', (data) => {
-    const { message, extremeVotes } = data;
-    Swal.fire('Discussion en cours', `${message}\nVotes extrêmes : ${extremeVotes.lowest} et ${extremeVotes.highest}`, 'info');
-    // Afficher le chat
-    chatDiv.style.display = 'block';
-    // Afficher le timer
-    discussionTimerDisplay.style.display = 'block';
-    startDiscussionTimer();
-    // Si le joueur est le créateur, afficher le bouton pour terminer le débat
-    if (socket.id === data.creatorId) {
-        forceEndDiscussionBtn.style.display = 'block';
-    }
-});
-
-// Fonction pour démarrer le timer côté client
-let discussionTimerInterval;
-function startDiscussionTimer() {
-    let timeLeft = 2 * 60; // 2 minutes en secondes
-    discussionTimerDisplay.textContent = `Temps restant pour le débat : ${formatTime(timeLeft)}`;
-    discussionTimerInterval = setInterval(() => {
-        timeLeft--;
-        discussionTimerDisplay.textContent = `Temps restant pour le débat : ${formatTime(timeLeft)}`;
-        if (timeLeft <= 0) {
-            clearInterval(discussionTimerInterval);
-            discussionTimerDisplay.style.display = 'none';
-            forceEndDiscussionBtn.style.display = 'none';
-        }
-    }, 1000);
 }
 
-// Fonction pour formater le temps en mm:ss
-function formatTime(time) {
-    const minutes = Math.floor(time / 60);
-    const seconds = time % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-}
-
-// Gestion de la fin du débat
-socket.on('revote', (data) => {
+function revote(data){
     // Arrêter le timer
     if (discussionTimerInterval) {
         clearInterval(discussionTimerInterval);
@@ -231,75 +263,65 @@ socket.on('revote', (data) => {
     // Cacher le chat
     chatDiv.style.display = 'none';
     chatMessages.innerHTML = '';
-});
+}
 
-// Réception des messages de chat
-socket.on('receiveMessage', (data) => {
+function startDiscussion(data){
+    const { message, extremeVotes } = data;
+    Swal.fire('Discussion', `${message}\nVotes extrêmes : ${extremeVotes.lowest} et ${extremeVotes.highest}`, 'info');
+    // Afficher le chat
+    chatDiv.style.display = 'block';
+    // Afficher le timer
+    discussionTimerDisplay.style.display = 'block';
+    startDiscussionTimer();
+}
+
+// Notification que la discussion a commencé
+function discussionStarted(data){
+    const { message, extremeVotes } = data;
+    Swal.fire('Discussion en cours', `${message}\nVotes extrêmes : ${extremeVotes.lowest} et ${extremeVotes.highest}`, 'info');
+    // Afficher le chat
+    chatDiv.style.display = 'block';
+    // Afficher le timer
+    discussionTimerDisplay.style.display = 'block';
+    startDiscussionTimer();
+    // Si le joueur est le créateur, afficher le bouton pour terminer le débat
+    if (socket.id === data.creatorId) {
+        forceEndDiscussionBtn.style.display = 'block';
+    }
+}
+
+
+
+function receiveMessage(data){
     const { username: sender, message } = data;
     const p = document.createElement('p');
     p.innerHTML = `<strong>${sender}:</strong> ${message}`;
     chatMessages.appendChild(p);
     // Faire défiler vers le bas
     chatMessages.scrollTop = chatMessages.scrollHeight;
-});
+}
 
-// Envoi des messages de chat
-sendChatBtn.addEventListener('click', () => {
-    const message = chatInput.value;
-    if (message) {
-        socket.emit('sendMessage', { roomName, message });
-        chatInput.value = '';
-    }
-});
-
-// Envoi du message en appuyant sur Entrée
-chatInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        sendChatBtn.click();
-    }
-});
-
-// Bouton pour forcer la fin du débat
-forceEndDiscussionBtn.addEventListener('click', () => {
-    socket.emit('forceEndDiscussion', roomName);
-});
-
-// Fin du jeu
-socket.on('gameFinished', (backlog) => {
+function gameFinished(backlog){
     console.log('Jeu terminé. Backlog estimé :', backlog);
     Swal.fire('Jeu terminé', 'Le backlog a été entièrement estimé. Les résultats ont été sauvegardés.', 'success');
     resultsDiv.style.display = 'block';
     results.textContent = JSON.stringify(backlog, null, 2);
-});
+}
 
-// Gestion des erreurs
-socket.on('error', (message) => {
+function showError(message){
     console.error('Erreur reçue du serveur :', message);
     Swal.fire('Erreur', message, 'error');
-});
+}
 
-// Chargement d'une partie sauvegardée
-loadGameBtn.addEventListener('click', () => {
-    roomName = document.getElementById('loadRoomNameInput').value;
-    if (roomName) {
-        socket.emit('loadGame', { roomName });
-    } else {
-        Swal.fire('Erreur', 'Veuillez entrer un nom de salle.', 'error');
-    }
-});
-
-// Confirmation du chargement de la partie
-socket.on('gameLoaded', (roomData) => {
+function gameLoaded(roomData){    
     console.log('Partie chargée :', roomData);
     document.getElementById('menu').style.display = 'none';
     document.getElementById('game').style.display = 'block';
     roomNameDisplay.textContent = roomName;
     Swal.fire('Partie chargée', `Partie ${roomName} chargée. Rejoignez la salle pour continuer.`, 'success');
-});
+}
 
-// Gestion du jeu en pause (suite à la carte "Café")
-socket.on('gamePaused', (message) => {
+function gamePaused(message){
     console.log('Jeu en pause :', message);
     Swal.fire('Jeu en pause', message, 'info');
-   
-});
+}
