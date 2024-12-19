@@ -12,6 +12,8 @@ app.use(express.static('public'));
 
 let rooms = {};
 
+let turns = 0;
+
 function getAvailableRooms() {
     return Object.keys(rooms).map(roomName => {
         const room = rooms[roomName];
@@ -71,7 +73,7 @@ function handleVotingResult(roomName) {
         io.to(roomName).emit('gamePaused', 'Tous les joueurs ont choisi "Café". La partie est sauvegardée.');
         return;
     }
-    if(gameMode == "mean"){
+    if(turns >0 && gameMode == "mean"){
         const somme = votes.reduce((acc, val) => acc + val, 0);
         const moyenne = somme / votes.length;
         const valeursPossibles = [1, 2, 3, 5, 8, 13, 20, 40, 100];
@@ -80,7 +82,7 @@ function handleVotingResult(roomName) {
         });
         decisionMade = true;
         estimatedDifficulty = valeurLaPlusProche;
-    }else if(gameMode == "median"){
+    }else if(turns >0 && gameMode == "median"){
         votes.sort()
         const n = sortedVotes.length;
         const isPair = n % 2 === 0;
@@ -88,7 +90,7 @@ function handleVotingResult(roomName) {
             return sortedVotes[Math.floor(n / 2)];
         }
         return (sortedVotes[n / 2 - 1] + sortedVotes[n / 2]) / 2;
-    }else if(gameMode == "plurality"){
+    }else if(turns >0 && gameMode == "plurality"){
         const voteCounts = {};
 
         // Count votes for each option
@@ -110,12 +112,12 @@ function handleVotingResult(roomName) {
         estimatedDifficulty = pluralityOption;
     }else{
         // Vérifie si tous les votes sont identiques
-        if (gameMode == "strict" && votes.every(v => v === votes[0])) {
-            decisionMade = true;
-            estimatedDifficulty = votes[0];
-        } else  if(gameMode == "absmajority" && IsAbsMaj(votes)){
+        if (turns >0 && gameMode == "absmajority" && IsAbsMaj(votes)) {
             decisionMade = true;
             estimatedDifficulty = IsAbsMaj(votes);
+        } else  if(votes.every(v => v === votes[0])){
+            decisionMade = true;
+            estimatedDifficulty = votes[0];
         }else{
             // Identifie les deux extrêmes
             const numericVotes = votesArray.filter(v => !isNaN(v.vote)).map(v => ({ ...v, vote: parseInt(v.vote), socketId: getSocketIdByUsername(roomName, v.username) }));
