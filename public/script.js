@@ -72,6 +72,8 @@ socket.on('startVoting', startVote);
 // Réception de la difficulté estimée
 socket.on('featureEstimated', featureEstimated);
 
+socket.on('showMessage', showMessage);
+
 // Gestion du vote
 cards.forEach(card => {
     card.addEventListener('click', () => {
@@ -324,4 +326,8 @@ function gameLoaded(roomData){
 function gamePaused(message){
     console.log('Jeu en pause :', message);
     Swal.fire('Jeu en pause', message, 'info');
+}
+
+function showMessage(message){
+    console.log('The gamemode :', message);
 }

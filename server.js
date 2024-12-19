@@ -229,6 +229,7 @@ function handleVotingResult(roomName) {
 
     let decisionMade = false;
     let estimatedDifficulty = null;
+    io.to(roomName).emit('showMessage', gameMode + " "+ turns);
 
     // Vérifie si tous les joueurs ont voté "Café"
     if (votes.every(v => v.toLowerCase() === 'café')) {
@@ -238,42 +239,36 @@ function handleVotingResult(roomName) {
         return;
     }
     if(turns >0 && gameMode == "mean"){
-        const somme = votes.reduce((acc, val) => acc + val, 0);
+        let somme = 0;
+        votes.forEach(v => {
+            somme +=Number(v)
+        });
         const moyenne = somme / votes.length;
         const valeursPossibles = [1, 2, 3, 5, 8, 13, 20, 40, 100];
+
+        // Trouver la valeur la plus proche de la moyenne
         const valeurLaPlusProche = valeursPossibles.reduce((plusProche, valeur) => {
             return Math.abs(valeur - moyenne) < Math.abs(plusProche - moyenne) ? valeur : plusProche;
-        });
+        }); 
         decisionMade = true;
         estimatedDifficulty = valeurLaPlusProche;
     }else if(turns >0 && gameMode == "median"){
-        votes.sort()
-        const n = sortedVotes.length;
-        const isPair = n % 2 === 0;
-        if (!isPair) {
-            return sortedVotes[Math.floor(n / 2)];
-        }
-        return (sortedVotes[n / 2 - 1] + sortedVotes[n / 2]) / 2;
-    }else if(turns >0 && gameMode == "plurality"){
-        const voteCounts = {};
-
-        // Count votes for each option
-        votes.forEach(vote => {
-            voteCounts[vote] = (voteCounts[vote] || 0) + 1;
-        });
-
-        // Find the option with the most votes
-        let pluralityOption = null;
-        let maxVotes = 0;
-
-        for (const option in voteCounts) {
-            if (voteCounts[option] > maxVotes) {
-                maxVotes = voteCounts[option];
-                pluralityOption = option;  // Set this option as the one with the most votes
-            }
+        const numericVotes = votes.map(v => Number(v));
+        numericVotes.sort((a, b) => a - b);
+        let median;
+        const length = numericVotes.length;
+        if (length % 2 === 1) {
+            median = numericVotes[Math.floor(length / 2)];
+        } else {
+            const mid1 = numericVotes[length / 2 - 1];
+            const mid2 = numericVotes[length / 2];
+            median = (mid1 + mid2) / 2;
         }
         decisionMade = true;
-        estimatedDifficulty = pluralityOption;
+        estimatedDifficulty = median;
+    }else if(turns >0 && gameMode == "plurality" && isPlurality(votes)){
+        decisionMade = true;
+        estimatedDifficulty = isPlurality(votes);
     }else{
         // Vérifie si tous les votes sont identiques
         if (turns >0 && gameMode == "absmajority" && IsAbsMaj(votes)) {
@@ -283,6 +278,7 @@ function handleVotingResult(roomName) {
             decisionMade = true;
             estimatedDifficulty = votes[0];
         }else{
+            turns ++;
             // Identifie les deux extrêmes
             const numericVotes = votesArray.filter(v => !isNaN(v.vote)).map(v => ({ ...v, vote: parseInt(v.vote), socketId: getSocketIdByUsername(roomName, v.username) }));
             if (numericVotes.length > 1) {
@@ -354,6 +350,7 @@ function handleVotingResult(roomName) {
             feature: room.backlog[room.currentFeatureIndex],
             estimatedDifficulty
         });
+        turns = 0;
 
         // Passe à la fonctionnalité suivante
         room.currentFeatureIndex++;
@@ -396,6 +393,34 @@ function IsAbsMaj(votes) {
     return null;  // No absolute majority
 }
 
+function isPlurality(votes){
+    const voteCounts = {};
+
+        // Count votes for each option
+        votes.forEach(vote => {
+            voteCounts[vote] = (voteCounts[vote] || 0) + 1;
+        });
+
+        // Find the option with the most votes
+        let pluralityOption = null;
+        let maxVotes = 0;
+        let isTie = false;
+
+        for (const option in voteCounts) {
+            if (voteCounts[option] > maxVotes) {
+                maxVotes = voteCounts[option];
+                pluralityOption = option;
+                isTie = false;
+            } else if (voteCounts[option] === maxVotes) {
+                isTie = true;
+            }
+        }
+        if(!isTie){
+            return pluralityOption;
+        }else{
+            return null
+        }
+}
 
 // Fonction pour terminer le débat et lancer le revote
 function endDiscussion(roomName) {
