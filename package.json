@@ -1,15 +1,17 @@
 {
   "dependencies": {
     "cypress": "^13.16.0",
-    "mocha": "^10.8.2"
+    "express": "^4.21.2",
+    "fs": "^0.0.1-security",
+    "mocha": "^10.8.2",
+    "socket": "^0.14.35",
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
     "jest": "^29.7.0"
   },
-  
-    "scripts": {
-      "test": "jest --coverage",
-      "coverage": "jest --json --coverage --outputFile=report.json"
-    }
-  
+  "scripts": {
+    "test": "jest --coverage",
+    "coverage": "jest --json --coverage --outputFile=report.json"
+  }
 }
