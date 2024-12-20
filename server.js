@@ -225,7 +225,7 @@ io.on('connection', (socket) => {
 });
 /**
  * Gère les résultats du vote d'une salle donnée
- * @param {string} roomName Le lom de la salle
+ * @param {string} roomName Le nom de la salle
  * @returns Le résultat du vote
  */
 // Fonction pour gérer le résultat du vote
@@ -405,7 +405,7 @@ function IsAbsMaj(votes) {
         }
     }
 
-    return null;  // No absolute majority
+    return null;
 }
 
 /**
@@ -416,12 +416,12 @@ function IsAbsMaj(votes) {
 function isPlurality(votes){
     const voteCounts = {};
 
-        // Count votes for each option
+        // Compte les votes pour chaque options
         votes.forEach(vote => {
             voteCounts[vote] = (voteCounts[vote] || 0) + 1;
         });
 
-        // Find the option with the most votes
+        // Trouve l'option avec le plus de vote
         let pluralityOption = null;
         let maxVotes = 0;
         let isTie = false;
