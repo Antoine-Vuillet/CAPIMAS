@@ -1,4 +1,8 @@
 // server.js
+//Uitilisation du tag "@module" afin de séparer les fichiers dans la documentation Jsdoc
+/**@module server */
+
+
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -13,7 +17,10 @@ app.use(express.static('public'));
 let rooms = {};
 
 let turns = 0;
-
+/**
+ * Cherche dans la base de données toutes les salles libres.
+ * @returns La liste de toutes les salles libres
+ */
 function getAvailableRooms() {
     return Object.keys(rooms).map(roomName => {
         const room = rooms[roomName];
@@ -216,7 +223,11 @@ io.on('connection', (socket) => {
     }
     );
 });
-
+/**
+ * Gère les résultats du vote d'une salle donnée
+ * @param {string} roomName Le lom de la salle
+ * @returns Le résultat du vote
+ */
 // Fonction pour gérer le résultat du vote
 function handleVotingResult(roomName) {
     const room = rooms[roomName];
@@ -373,7 +384,11 @@ function handleVotingResult(roomName) {
         }
     }
 }
-
+/**
+ * Gère le résultat d'un vote si l'option de la salle est "Majorité absolue"
+ * @param {*} votes La liste des votes de la tâche en cours
+ * @returns Le résultat remportant le vote. Si aucun résultat ne l'emporte, renvoie Null.
+ */
 function IsAbsMaj(votes) {
     const voteCounts = {};
 
@@ -393,6 +408,11 @@ function IsAbsMaj(votes) {
     return null;  // No absolute majority
 }
 
+/**
+ * Gère le résultat d'un vote si l'option de la salle est "Majorité relative"
+ * @param {*} votes La liste des votes de la tâche en cours
+ * @returns Le résultat remportant le vote. Si aucun résultat ne l'emporte, renvoie Null.
+ */
 function isPlurality(votes){
     const voteCounts = {};
 
@@ -421,7 +441,10 @@ function isPlurality(votes){
             return null
         }
 }
-
+/**
+ * Fonction pour terminer le débat et lancer le revote dans une salle
+ * @param {*} roomName Nom de la salle
+ */
 // Fonction pour terminer le débat et lancer le revote
 function endDiscussion(roomName) {
     const room = rooms[roomName];
@@ -443,7 +466,12 @@ function endDiscussion(roomName) {
     io.to(roomName).emit('revote', { feature: room.backlog[room.currentFeatureIndex], message: 'Le débat est terminé, veuillez revoter.' });
 }
 
-// Fonction pour obtenir le socketId d'un joueur à partir de son pseudo
+/**
+ * Fonction pour obtenir le socketId d'un joueur à partir de son pseudo
+ * @param {string} roomName Nom de la salle dans laquelle se trouve le joueur
+ * @param {string} username Nom du joueur
+ * @returns L'id de la Socket. Null si rien n'est trouvé
+ */
 function getSocketIdByUsername(roomName, username) {
     const room = rooms[roomName];
     for (const socketId in room.players) {
@@ -454,7 +482,11 @@ function getSocketIdByUsername(roomName, username) {
     return null;
 }
 
-// Fonction pour sauvegarder la partie
+/**
+ * Fonction pour sauvegarder la partie d'une salle
+ * @param {*} roomName Nom de la salle
+ * @param {*} roomData Données de la salle
+ */
 function saveGame(roomName, roomData) {
     const dir = 'saved_games';
     if (!fs.existsSync(dir)){
@@ -469,7 +501,11 @@ function saveGame(roomName, roomData) {
     });
 }
 
-// Fonction pour sauvegarder les résultats
+/**
+ * Fonction pour sauvegarder les résultats du vote d'une salle
+ * @param {*} roomName Nom de la salle
+ * @param {*} backlog Résultats des votes
+ */
 function saveResults(roomName, backlog) {
     const dir = 'results';
     if (!fs.existsSync(dir)){
@@ -484,6 +520,10 @@ function saveResults(roomName, backlog) {
     });
 }
 
+/**
+ * Créé une salle à partir d'un jeu de données
+ * @param {*} data Données contenant les informations paour la création de la salle.
+ */
 function createRoom(data){
     const { roomName, maxPlayers, username, gameMode, backlog } = data;
     if (rooms[roomName]) {
@@ -521,6 +561,10 @@ function createRoom(data){
     }
 }
 
+/**
+ * Charge une partie à partir d'un jeu de données
+ * @param {*} data Données contenant les informations pour charger la partie
+ */
 function loadGame(data){
     const { roomName } = data;
     fs.readFile(`saved_games/${roomName}.json`, 'utf8', (err, jsonString) => {

@@ -1,4 +1,5 @@
-
+//Uitilisation du tag "@module" afin de séparer les fichiers dans la documentation Jsdoc
+/**@module script */
 const socket = io();
 
 let roomName;
@@ -96,6 +97,10 @@ socket.on('discussionStarted', discussionStarted);
 
 // Fonction pour démarrer le timer côté client
 let discussionTimerInterval;
+
+/**
+ * Démarre le timer pour la discussion pour un vote.
+ */
 function startDiscussionTimer() {
     let timeLeft = 2 * 60; // 2 minutes en secondes
     discussionTimerDisplay.textContent = `Temps restant pour le débat : ${formatTime(timeLeft)}`;
@@ -110,7 +115,11 @@ function startDiscussionTimer() {
     }, 1000);
 }
 
-// Fonction pour formater le temps en mm:ss
+/**
+ * Formate le temps donné en paramètre
+ * @param {*} time Le temps à formater
+ * @returns Le temps rentré en paramètre, formaté en mm:ss
+ */
 function formatTime(time) {
     const minutes = Math.floor(time / 60);
     const seconds = time % 60;
@@ -213,6 +222,9 @@ function roomsAvailable(rooms){
     });
 }
 
+/**
+ * Affiche le message avertissant l'utilistaeur qu'il a rejoint une salle
+ */
 function roomJoined(){
     console.log('Vous avez rejoint la salle :', roomName);
     document.getElementById('menu').style.display = 'none';
@@ -220,6 +232,10 @@ function roomJoined(){
     roomNameDisplay.textContent = roomName;
 }
 
+/**
+ * Met à jour la liste des joueurs affichée
+ * @param {*} players La nouvelle liste des joueurs
+ */
 function updatePlayers(players){
     playersList.innerHTML = '';
     players.forEach(player => {
@@ -229,6 +245,10 @@ function updatePlayers(players){
     });
 }
 
+/**
+ * Commence le vote pour une feature
+ * @param {*} feature La feature qui sera votée
+ */
 function startVote(feature){
     console.log('Démarrage du vote pour la fonctionnalité :', feature.description);
     document.getElementById('menu').style.display = 'none';
@@ -245,11 +265,19 @@ function startVote(feature){
     forceEndDiscussionBtn.style.display = 'none';
 }
 
+/**
+ * Affiche le message qui indique la durée estimée d'une feature suite à un vote
+ * @param {*} data Données contenant la feature et sa difficulté estimée
+ */
 function featureEstimated(data){
     const { feature, estimatedDifficulty } = data;
     Swal.fire('Difficulté estimée', `La fonctionnalité "${feature.description}" a été estimée à ${estimatedDifficulty}.`, 'success');
 }
 
+/**
+ * Lance le vote de la fonctionnalité suivante
+ * @param {*} data Données de la salle 
+ */
 function revote(data){
     // Arrêter le timer
     if (discussionTimerInterval) {
@@ -267,6 +295,10 @@ function revote(data){
     chatMessages.innerHTML = '';
 }
 
+/**
+ * Démarre la discussion d'un vote
+ * @param {*} data Données du vote qui sera discuté
+ */
 function startDiscussion(data){
     const { message, extremeVotes } = data;
     Swal.fire('Discussion', `${message}\nVotes extrêmes : ${extremeVotes.lowest} et ${extremeVotes.highest}`, 'info');
@@ -276,7 +308,10 @@ function startDiscussion(data){
     discussionTimerDisplay.style.display = 'block';
     startDiscussionTimer();
 }
-
+/**
+ * Affiche le message du début de discussion
+ * @param {*} data Données du vote qui sera discuté
+ */
 // Notification que la discussion a commencé
 function discussionStarted(data){
     const { message, extremeVotes } = data;
@@ -293,7 +328,10 @@ function discussionStarted(data){
 }
 
 
-
+/**
+ * Affiche un message envoyé dans le chat
+ * @param {} data Données du message
+ */
 function receiveMessage(data){
     const { username: sender, message } = data;
     const p = document.createElement('p');
@@ -303,18 +341,29 @@ function receiveMessage(data){
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
+/**
+ * Affiche le message de fin de jeu ainsi que le backlog du résulat des votes
+ * @param {JSON} backlog Données du backlog
+ */
 function gameFinished(backlog){
     console.log('Jeu terminé. Backlog estimé :', backlog);
     Swal.fire('Jeu terminé', 'Le backlog a été entièrement estimé. Les résultats ont été sauvegardés.', 'success');
     resultsDiv.style.display = 'block';
     results.textContent = JSON.stringify(backlog, null, 2);
 }
-
+/**
+ * Affiche un message d'erreur envoyé par le serveur
+ * @param {*} message Données du message
+ */
 function showError(message){
     console.error('Erreur reçue du serveur :', message);
     Swal.fire('Erreur', message, 'error');
 }
 
+/**
+ * Affiche le message du chargement d'une partie dans une salle
+ * @param {*} roomData Données de la salle
+ */
 function gameLoaded(roomData){    
     console.log('Partie chargée :', roomData);
     document.getElementById('menu').style.display = 'none';
@@ -323,11 +372,19 @@ function gameLoaded(roomData){
     Swal.fire('Partie chargée', `Partie ${roomName} chargée. Rejoignez la salle pour continuer.`, 'success');
 }
 
+/**
+ * Affiche le message de mise en pause d'une partie
+ * @param {*} message Données du message
+ */
 function gamePaused(message){
     console.log('Jeu en pause :', message);
     Swal.fire('Jeu en pause', message, 'info');
 }
 
+/**
+ * Montre un message indiquant le mode de jeu
+ * @param {*} message Données du message
+ */
 function showMessage(message){
     console.log('The gamemode :', message);
 }
