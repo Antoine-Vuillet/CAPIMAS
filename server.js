@@ -386,7 +386,7 @@ function handleVotingResult(roomName) {
 }
 /**
  * Gère le résultat d'un vote si l'option de la salle est "Majorité absolue"
- * @param {*} votes La liste des votes de la tâche en cours
+ * @param {Object[]} votes La liste des votes de la tâche en cours
  * @returns Le résultat remportant le vote. Si aucun résultat ne l'emporte, renvoie Null.
  */
 function IsAbsMaj(votes) {
@@ -410,7 +410,7 @@ function IsAbsMaj(votes) {
 
 /**
  * Gère le résultat d'un vote si l'option de la salle est "Majorité relative"
- * @param {*} votes La liste des votes de la tâche en cours
+ * @param {Object[]} votes La liste des votes de la tâche en cours
  * @returns Le résultat remportant le vote. Si aucun résultat ne l'emporte, renvoie Null.
  */
 function isPlurality(votes){
@@ -443,7 +443,7 @@ function isPlurality(votes){
 }
 /**
  * Fonction pour terminer le débat et lancer le revote dans une salle
- * @param {*} roomName Nom de la salle
+ * @param {string} roomName Nom de la salle
  */
 // Fonction pour terminer le débat et lancer le revote
 function endDiscussion(roomName) {
@@ -484,8 +484,8 @@ function getSocketIdByUsername(roomName, username) {
 
 /**
  * Fonction pour sauvegarder la partie d'une salle
- * @param {*} roomName Nom de la salle
- * @param {*} roomData Données de la salle
+ * @param {string} roomName Nom de la salle
+ * @param {Object} roomData Données de la salle
  */
 function saveGame(roomName, roomData) {
     const dir = 'saved_games';
@@ -503,8 +503,8 @@ function saveGame(roomName, roomData) {
 
 /**
  * Fonction pour sauvegarder les résultats du vote d'une salle
- * @param {*} roomName Nom de la salle
- * @param {*} backlog Résultats des votes
+ * @param {string} roomName Nom de la salle
+ * @param {JSON} backlog Résultats des votes
  */
 function saveResults(roomName, backlog) {
     const dir = 'results';
@@ -522,7 +522,7 @@ function saveResults(roomName, backlog) {
 
 /**
  * Créé une salle à partir d'un jeu de données
- * @param {*} data Données contenant les informations paour la création de la salle.
+ * @param {Object} data Données contenant les informations paour la création de la salle.
  */
 function createRoom(data){
     const { roomName, maxPlayers, username, gameMode, backlog } = data;
@@ -563,7 +563,7 @@ function createRoom(data){
 
 /**
  * Charge une partie à partir d'un jeu de données
- * @param {*} data Données contenant les informations pour charger la partie
+ * @param {Object} data Données contenant les informations pour charger la partie
  */
 function loadGame(data){
     const { roomName } = data;

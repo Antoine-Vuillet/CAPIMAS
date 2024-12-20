@@ -117,7 +117,7 @@ function startDiscussionTimer() {
 
 /**
  * Formate le temps donné en paramètre
- * @param {*} time Le temps à formater
+ * @param {Time} time Le temps à formater
  * @returns Le temps rentré en paramètre, formaté en mm:ss
  */
 function formatTime(time) {
@@ -234,7 +234,7 @@ function roomJoined(){
 
 /**
  * Met à jour la liste des joueurs affichée
- * @param {*} players La nouvelle liste des joueurs
+ * @param {Object[]} players La nouvelle liste des joueurs
  */
 function updatePlayers(players){
     playersList.innerHTML = '';
@@ -247,7 +247,7 @@ function updatePlayers(players){
 
 /**
  * Commence le vote pour une feature
- * @param {*} feature La feature qui sera votée
+ * @param {Object} feature La feature qui sera votée
  */
 function startVote(feature){
     console.log('Démarrage du vote pour la fonctionnalité :', feature.description);
@@ -267,7 +267,7 @@ function startVote(feature){
 
 /**
  * Affiche le message qui indique la durée estimée d'une feature suite à un vote
- * @param {*} data Données contenant la feature et sa difficulté estimée
+ * @param {Object} data Données contenant la feature et sa difficulté estimée
  */
 function featureEstimated(data){
     const { feature, estimatedDifficulty } = data;
@@ -276,7 +276,7 @@ function featureEstimated(data){
 
 /**
  * Lance le vote de la fonctionnalité suivante
- * @param {*} data Données de la salle 
+ * @param {Object} data Données de la salle 
  */
 function revote(data){
     // Arrêter le timer
@@ -297,7 +297,7 @@ function revote(data){
 
 /**
  * Démarre la discussion d'un vote
- * @param {*} data Données du vote qui sera discuté
+ * @param {Object} data Données du vote qui sera discuté
  */
 function startDiscussion(data){
     const { message, extremeVotes } = data;
@@ -310,7 +310,7 @@ function startDiscussion(data){
 }
 /**
  * Affiche le message du début de discussion
- * @param {*} data Données du vote qui sera discuté
+ * @param {Object} data Données du vote qui sera discuté
  */
 // Notification que la discussion a commencé
 function discussionStarted(data){
@@ -330,7 +330,7 @@ function discussionStarted(data){
 
 /**
  * Affiche un message envoyé dans le chat
- * @param {} data Données du message
+ * @param {Object} data Données du message
  */
 function receiveMessage(data){
     const { username: sender, message } = data;
@@ -353,7 +353,7 @@ function gameFinished(backlog){
 }
 /**
  * Affiche un message d'erreur envoyé par le serveur
- * @param {*} message Données du message
+ * @param {Object} message Données du message
  */
 function showError(message){
     console.error('Erreur reçue du serveur :', message);
@@ -362,7 +362,7 @@ function showError(message){
 
 /**
  * Affiche le message du chargement d'une partie dans une salle
- * @param {*} roomData Données de la salle
+ * @param {Object} roomData Données de la salle
  */
 function gameLoaded(roomData){    
     console.log('Partie chargée :', roomData);
@@ -374,7 +374,7 @@ function gameLoaded(roomData){
 
 /**
  * Affiche le message de mise en pause d'une partie
- * @param {*} message Données du message
+ * @param {string} message Données du message
  */
 function gamePaused(message){
     console.log('Jeu en pause :', message);
@@ -383,7 +383,7 @@ function gamePaused(message){
 
 /**
  * Montre un message indiquant le mode de jeu
- * @param {*} message Données du message
+ * @param {string} message Données du message
  */
 function showMessage(message){
     console.log('The gamemode :', message);
